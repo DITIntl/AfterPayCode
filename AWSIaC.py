@@ -1,3 +1,4 @@
+import time
 import logging
 import boto3
 from operator import itemgetter
@@ -74,13 +75,20 @@ sudo systemctl enable ntpd.service
 echo "*         hard    nofile      65535" | sudo tee -a /etc/security/limits.conf
 echo "*         soft    nofile      65535" | sudo tee -a /etc/security/limits.conf"""
 
-ec2_client = boto3.client('ec2')
-response = ec2_client.run_instances(ImageId=ami_id,
+ec2_resource = boto3.resource('ec2')
+instance = ec2_resource.create_instances(ImageId=ami_id,
                                             InstanceType='t2.micro',
                                             KeyName='AfterPayKey',
                                             MinCount=1,
                                             MaxCount=1,
-					    UserData=user_data_script)
+                                            UserData=user_data_script)
 
 
+logging.warning('Update packages, install services and configure services on AWSLinuxAfterPay AMI')
+time.sleep(300)
+boto3.client('ec2').create_image(InstanceId=instance[0].instance_id, Name='AWSLinuxAfterPay')
 
+time.sleep(300)
+
+
+logging.warning('Customised AMI Created for AfterPay')
