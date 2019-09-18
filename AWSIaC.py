@@ -60,10 +60,27 @@ logging.warning('Generating a SSH-key file AfterPayKey.pem whcih can be used to 
 
 logging.warning('Creating a customised AMI ...')
 
+user_data_script = """#!/bin/bash
+sudo yum -y update --security
+sudo yum -y update
+sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1
+sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1
+sudo yum -y install ntp
+sudo yum -y install telnet
+sudo yum -y install mtr
+sudo yum -y install tree
+sudo systemctl start ntpd
+sudo systemctl enable ntpd.service
+echo "*         hard    nofile      65535" | sudo tee -a /etc/security/limits.conf
+echo "*         soft    nofile      65535" | sudo tee -a /etc/security/limits.conf"""
+
 ec2_client = boto3.client('ec2')
 response = ec2_client.run_instances(ImageId=ami_id,
                                             InstanceType='t2.micro',
                                             KeyName='AfterPayKey',
                                             MinCount=1,
-                                            MaxCount=1)
- 
+                                            MaxCount=1,
+					    UserData=user_data_script)
+
+
+
