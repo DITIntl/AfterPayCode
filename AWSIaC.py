@@ -86,9 +86,16 @@ instance = ec2_resource.create_instances(ImageId=ami_id,
 
 logging.warning('Update packages, install services and configure services on AWSLinuxAfterPay AMI')
 time.sleep(300)
-boto3.client('ec2').create_image(InstanceId=instance[0].instance_id, Name='AWSLinuxAfterPay')
+image = boto3.client('ec2').create_image(InstanceId=instance[0].instance_id, Name='AWSLinuxAfterPay')
 
-time.sleep(300)
+time.sleep(150)
 
 
 logging.warning('Customised AMI Created for AfterPay')
+
+
+ec2server = ec2_resource.create_instances(ImageId=image['ImageId'],
+                                            InstanceType='t2.micro',
+                                            KeyName='AfterPayKey',
+                                            MinCount=1,
+                                            MaxCount=1)
