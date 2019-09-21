@@ -250,21 +250,20 @@ attachElbResponse = autoScaleClient.attach_load_balancers(
     ]
 )
 
-logging.warning('Please use Elastic Load Balancer DNS name to access AfterPay application : %s', elbResponse['DNSName'])
 
 
 ######## Cleaning up intermediate EC2 instances #########
 
-cleanUpEc2Client = boto3.client('ec2')
-cleanUpEc2Response = cleanUpEc2client.terminate_instances(
-    InstanceIds=[
-        ec2InstanceAmi[0].instance_id,
-    ]
-)
 
 logging.warning('Hang on tight mate, It is almost there !')
 
 time.sleep(300)
+
+logging.warning('Please use Elastic Load Balancer DNS name to access AfterPay application : %s', elbResponse['DNSName'])
+
+logging.warning('cleaning up enviroment ....')
+
+time.sleep(10)
 
 cleanUpEc2Client = boto3.client('ec2')
 cleanUpEc2Response = cleanUpEc2Client.terminate_instances(
@@ -273,7 +272,11 @@ cleanUpEc2Response = cleanUpEc2Client.terminate_instances(
     ]
 )
 
+cleanUpEc2Client = boto3.client('ec2')
+cleanUpEc2Response = cleanUpEc2Client.terminate_instances(
+    InstanceIds=[
+        ec2InstanceAmi[0].instance_id,
+    ]
+)
 
-
-logging.warning('Please use Elastic Load Balancer DNS name to access AfterPay application : %s', elbResponse['DNSName'])
-
+logging.warning('AFterPay @ AWS Ready !')
