@@ -100,6 +100,31 @@ logging.warning('Customised AMI Created for AfterPay')
 #                                            MinCount=1,
 #                                            MaxCount=1)
 
+
+
+#ec2 = boto3.client('ec2')
+
+#response = ec2.describe_vpcs()
+#vpc_id = response.get('Vpcs', [{}])[0].get('VpcId', '')
+
+#response = ec2.create_security_group(GroupName='ALLOW_SSH_HTTP',
+#                                         Description='Allow ssh traffic and web',
+#                                         VpcId=vpc_id)
+#security_group_id = response['GroupId']
+#print('Security Group Created %s in vpc %s.' % (security_group_id, vpc_id))
+#data = ec2.authorize_security_group_ingress(
+#        GroupId=security_group_id,
+#        IpPermissions=[
+#            {'IpProtocol': 'tcp',
+#             'FromPort': 80,
+#             'ToPort': 80,
+#             'IpRanges': [{'CidrIp': '0.0.0.0/0'}]},
+#            {'IpProtocol': 'tcp',
+#             'FromPort': 22,
+#             'ToPort': 22,
+#             'IpRanges': [{'CidrIp': '0.0.0.0/0'}]}
+#        ])
+
 user_data_script2= """#!/bin/bash
 mkdir myproject
 cd myproject
@@ -112,10 +137,43 @@ sed -i "s/app.run()/app.run(host='0.0.0.0', debug=True, port=80)/g" tiny_app.py
 sudo python tiny_app.py"""
 
 
-ec2server = ec2_resource.create_instances(ImageId='ami-009eb83aa92b90a96',
-                                            InstanceType='t2.micro',
-                                            KeyName='AfterPayKey',
-                                            MinCount=1,
-                                            MaxCount=1,
-					    UserData=user_data_script2)
+#ec2server = ec2_resource.create_instances(ImageId='ami-009eb83aa92b90a96',
+#                                            InstanceType='t2.micro',
+#                                            KeyName='AfterPayKey',
+#                                            MinCount=1,
+#                                            MaxCount=1,
+#					    SecurityGroupIds=[
+#            					security_group_id,
+#            				    ],
+#					    UserData=user_data_script2)
+
+
+
+
+#ec2server = ec2_resource.create_instances(ImageId='ami-009eb83aa92b90a96',
+#                                            InstanceType='t2.micro',
+#                                            KeyName='AfterPayKey',
+#                                            MinCount=1,
+#                                            MaxCount=1,
+#                                            SecurityGroupIds=[
+#                                                'sg-0d33a50e7c4878f36',
+#                                            ],
+#                                            UserData=user_data_script2)
+
+client = boto3.client('autoscaling')
+
+
+response = client.create_auto_scaling_group(
+    AutoScalingGroupName='AutoScaleGroup01',
+    MaxSize=3,
+    MinSize=2
+)
+
+response = client.attach_instances(
+    InstanceIds=[
+        'i-0996e316ac8b41114',
+    ],
+    AutoScalingGroupName='AutoScaleGroup01'
+)
+
 
