@@ -219,6 +219,7 @@ response = client.create_auto_scaling_group(
     AutoScalingGroupName='AutoScaleGroup01',
     InstanceId=ec2server[0].instance_id,
     DesiredCapacity=2,
+    DefaultCooldown=30,
     MaxSize=2,
     MinSize=2
 )
