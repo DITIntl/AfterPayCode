@@ -150,8 +150,8 @@ vpcId = sgResponseA.get('Vpcs', [{}])[0].get('VpcId', '')
 sgresponseB = securityGroupClient.create_security_group(GroupName='ALLOW_SSH_HTTP',
                                          Description='Allow ssh traffic and web',
                                          VpcId=vpcId)
-securityGroupId = response['GroupId']
-logging.warning('Security Group Created %s in vpc %s.', security_group_id, vpc_id)
+securityGroupId = sgresponseB['GroupId']
+logging.warning('Security Group Created %s in vpc %s.', securityGroupId, vpcId)
 
 data = securityGroupClient.authorize_security_group_ingress(
         GroupId=securityGroupId,
@@ -206,7 +206,7 @@ while len(ec2ServerStatus['InstanceStatuses']) == 0:
 
 time.sleep(120)
 
-
+logging.warning('Installing Flask Development Server,Download AfterPay app from Git and run server on port 80')
 
 ######### Create an AutoScale Group with a Elastic Load Balancer ######
 
@@ -236,7 +236,7 @@ autoScaleClient = boto3.client('autoscaling')
 
 creatASResponse = autoScaleClient.create_auto_scaling_group(
     AutoScalingGroupName='AutoScaleGroup01',
-    InstanceId=ec2server[0].instance_id,
+    InstanceId=ec2Server[0].instance_id,
     DesiredCapacity=2,
     DefaultCooldown=30,
     MaxSize=2,
@@ -251,3 +251,30 @@ attachElbResponse = autoScaleClient.attach_load_balancers(
 )
 
 logging.warning('Please use Elastic Load Balancer DNS name to access AfterPay application : %s', elbResponse['DNSName'])
+
+
+######## Cleaning up intermediate EC2 instances #########
+
+cleanUpEc2Client = boto3.client('ec2')
+cleanUpEc2Response = cleanUpEc2client.terminate_instances(
+    InstanceIds=[
+        ec2InstanceAmi[0].instance_id,
+    ]
+)
+
+time.sleep(120)
+
+cleanUpEc2Client = boto3.client('ec2')
+cleanUpEc2Response = cleanUpEc2client.terminate_instances(
+    InstanceIds=[
+        ec2Server[0].instance_id,
+    ]
+)
+
+
+
+logging.warning('Please use Elastic Load Balancer DNS name to access AfterPay application : %s', elbResponse['DNSName'])
+
+
+
+
