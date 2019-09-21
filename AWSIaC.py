@@ -76,26 +76,46 @@ echo "*         hard    nofile      65535" | sudo tee -a /etc/security/limits.co
 echo "*         soft    nofile      65535" | sudo tee -a /etc/security/limits.conf"""
 
 ec2_resource = boto3.resource('ec2')
-instance = ec2_resource.create_instances(ImageId=ami_id,
-                                            InstanceType='t2.micro',
-                                            KeyName='AfterPayKey',
-                                            MinCount=1,
-                                            MaxCount=1,
-                                            UserData=user_data_script)
+#instance = ec2_resource.create_instances(ImageId=ami_id,
+#                                            InstanceType='t2.micro',
+#                                            KeyName='AfterPayKey',
+#                                            MinCount=1,
+#                                            MaxCount=1,
+#                                            UserData=user_data_script)
 
 
 logging.warning('Update packages, install services and configure services on AWSLinuxAfterPay AMI')
-time.sleep(300)
-image = boto3.client('ec2').create_image(InstanceId=instance[0].instance_id, Name='AWSLinuxAfterPay')
+#time.sleep(300)
+#image = boto3.client('ec2').create_image(InstanceId=instance[0].instance_id, Name='AWSLinuxAfterPay')
 
-time.sleep(150)
+#time.sleep(150)
 
 
 logging.warning('Customised AMI Created for AfterPay')
 
 
-ec2server = ec2_resource.create_instances(ImageId=image['ImageId'],
+#ec2server = ec2_resource.create_instances(ImageId=image['ImageId'],
+#                                            InstanceType='t2.micro',
+#                                            KeyName='AfterPayKey',
+#                                            MinCount=1,
+#                                            MaxCount=1)
+
+user_data_script2= """#!/bin/bash
+mkdir myproject
+cd myproject
+python3 -m venv venv
+. venv/bin/activate
+sudo pip install Flask
+wget https://raw.githubusercontent.com/AfterpayTouch/recruitment-challenge-1/master/tiny_app.py
+export FLASK_APP=tiny_app.py
+sed -i "s/app.run()/app.run(host='0.0.0.0', debug=True, port=80)/g" tiny_app.py
+sudo python tiny_app.py"""
+
+
+ec2server = ec2_resource.create_instances(ImageId='ami-009eb83aa92b90a96',
                                             InstanceType='t2.micro',
                                             KeyName='AfterPayKey',
                                             MinCount=1,
-                                            MaxCount=1)
+                                            MaxCount=1,
+					    UserData=user_data_script2)
+
