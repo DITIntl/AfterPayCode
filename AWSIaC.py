@@ -96,7 +96,10 @@ sudo yum -y install tree
 sudo systemctl start ntpd
 sudo systemctl enable ntpd.service
 echo "*         hard    nofile      65535" | sudo tee -a /etc/security/limits.conf
-echo "*         soft    nofile      65535" | sudo tee -a /etc/security/limits.conf"""
+echo "*         soft    nofile      65535" | sudo tee -a /etc/security/limits.conf
+echo "net.ipv6.conf.all.disable_ipv6 = 1" | sudo tee -a /etc/sysctl.conf
+echo "net.ipv6.conf.default.disable_ipv6 = 1" | sudo tee -a /etc/sysctl.conf
+echo "net.ipv6.conf.lo.disable_ipv6 = 1" | sudo tee -a /etc/sysctl.conf"""
 
 ec2AmiResource = boto3.resource('ec2')
 ec2InstanceAmi = ec2AmiResource.create_instances(ImageId=amiId,
@@ -107,14 +110,30 @@ ec2InstanceAmi = ec2AmiResource.create_instances(ImageId=amiId,
                                             UserData=userDataScriptAmi)
 
 
-logging.warning('Update packages, install services and configure services on AWSLinuxAfterPay AMI')
-#time.sleep(300)
-#image = boto3.client('ec2').create_image(InstanceId=instance[0].instance_id, Name='AWSLinuxAfterPay')
-
-#time.sleep(150)
+logging.warning('Updatinge packages, installing services and configuring services in progress for customized AMI for AfterPay ...')
 
 
-logging.warning('Customised AMI Created for AfterPay')
+checkStatusClient = boto3.client('ec2')
+ec2AmiStatus = checkStatusClient.describe_instance_status(InstanceIds=[
+        			   ec2InstanceAmi[0].instance_id,
+    				])
+
+while len(ec2AmiStatus['InstanceStatuses']) == 0:
+	ec2AmiStatus = checkStatusClient.describe_instance_status(InstanceIds=[
+                                   ec2InstanceAmi[0].instance_id,
+                                ]) 
+#print(ec2AmiStatus['InstanceStatuses'][0]['InstanceState']['Name'])
+
+time.sleep(30)
+
+amiImage = boto3.client('ec2').create_image(InstanceId=ec2InstanceAmi[0].instance_id, Name='AfterPayAMI')
+	 
+time.sleep(30)
+
+if len(amiImage['ImageId']) == 0:
+        time.sleep(60)
+
+logging.warning('Customized AMI image build for  AfterPay completed ... AMI image name is AfterPayAMI')
 
 
 #ec2server = ec2_resource.create_instances(ImageId=image['ImageId'],
