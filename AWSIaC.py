@@ -6,7 +6,7 @@ from operator import itemgetter
 
 #########  Create a filter to filter out Amazon Linux standard base image, which will be used to build customized AMI for AfterPay. #########
 
-client = boto3.client('ec2')
+findAmiClient = boto3.client('ec2')
 
 filters = [ {
     'Name': 'name',
@@ -38,7 +38,7 @@ filters = [ {
 } ]
 
 ######### Use above filter to search in Amazon for AMI ID ############ 
-response = client.describe_images(
+findAmiResponse = findAmiClient.describe_images(
   Filters=filters,
   Owners=[
       'amazon'
@@ -47,23 +47,40 @@ response = client.describe_images(
 
 ######### Sort on above results and creation AMI images on decending order. ###########
 
-image_details = sorted(response['Images'],key=itemgetter('CreationDate'),reverse=True)
-ami_id = image_details[0]['ImageId']
+image_details = sorted(findAmiResponse['Images'],key=itemgetter('CreationDate'),reverse=True)
+amiId = image_details[0]['ImageId']
 logging.basicConfig(format='%(asctime)s %(message)s')
 
 
-logging.warning('Script will use Amazon AMI ID :  %s for building base customized AMI : ', ami_id)
+logging.warning('Script will use Amazon AMI ID : %s which will be used for  building base customized AMI for AfterPay', amiId)
+
+######## Creating Key Pair and saving it on local computer ##########
 
 
-#ec2 = boto3.client('ec2')
-#response = ec2.create_key_pair(KeyName='AfterPayKey2')
-logging.warning('Generating a SSH-key file AfterPayKey.pem whcih can be used to loggin to server ')
+sshKeyClient = boto3.client('ec2')
+sshKeyResponse = sshKeyClient.create_key_pair(KeyName='AfterPaySSHKey')
+logging.warning('Generated a SSH-key file AfterPaySSHKey.pem whcih can be used to login to server and saved it on local folder used to run this script.')
 
-#f= open("AfterPayKey2.pem","w+")
-#f.write(str(response))
-#f.close()
+f= open("AfterPaySSHKey.pem","w+")
+f.write(str(sshKeyResponse))
+f.close()
 
 logging.warning('Creating a customised AMI ...')
+printSpec = """Creating a customized AMI for After pay with below specifications
+
+
+*All packages are update to date and all pending security updates are applied against the default OS repositories.
+
+*disable IPv6 system wide.
+
+*install the following packages: ntp (NTP daemon)(make sure it is started at boot), telnet, mtr, tree.
+
+*set the max "open files" limit across all users/processes, soft & hard, to 65535.
+
+"""
+
+logging.warning(printSpec)
+
 
 user_data_script = """#!/bin/bash
 sudo yum -y update --security
