@@ -124,50 +124,52 @@ while len(ec2AmiStatus['InstanceStatuses']) == 0:
                                 ]) 
 #print(ec2AmiStatus['InstanceStatuses'][0]['InstanceState']['Name'])
 
-time.sleep(30)
+time.sleep(120)
 
 amiImage = boto3.client('ec2').create_image(InstanceId=ec2InstanceAmi[0].instance_id, Name='AfterPayAMI')
 	 
-time.sleep(30)
 
 if len(amiImage['ImageId']) == 0:
         time.sleep(60)
 
+time.sleep(120)
+
+
 logging.warning('Customized AMI image build for  AfterPay completed ... AMI image name is AfterPayAMI')
 
 
-#ec2server = ec2_resource.create_instances(ImageId=image['ImageId'],
-#                                            InstanceType='t2.micro',
-#                                            KeyName='AfterPayKey',
-#                                            MinCount=1,
-#                                            MaxCount=1)
 
 
+######## Creating Security Groups ##########
 
-#ec2 = boto3.client('ec2')
+securityGroupClient = boto3.client('ec2')
 
-#response = ec2.describe_vpcs()
-#vpc_id = response.get('Vpcs', [{}])[0].get('VpcId', '')
+sgResponseA = securityGroupClient.describe_vpcs()
+vpcId = sgResponseA.get('Vpcs', [{}])[0].get('VpcId', '')
 
-#response = ec2.create_security_group(GroupName='ALLOW_SSH_HTTP',
-#                                         Description='Allow ssh traffic and web',
-#                                         VpcId=vpc_id)
-#security_group_id = response['GroupId']
-#print('Security Group Created %s in vpc %s.' % (security_group_id, vpc_id))
-#data = ec2.authorize_security_group_ingress(
-#        GroupId=security_group_id,
-#        IpPermissions=[
-#            {'IpProtocol': 'tcp',
-#             'FromPort': 80,
-#             'ToPort': 80,
-#             'IpRanges': [{'CidrIp': '0.0.0.0/0'}]},
-#            {'IpProtocol': 'tcp',
-#             'FromPort': 22,
-#             'ToPort': 22,
-#             'IpRanges': [{'CidrIp': '0.0.0.0/0'}]}
-#        ])
+sgresponseB = securityGroupClient.create_security_group(GroupName='ALLOW_SSH_HTTP',
+                                         Description='Allow ssh traffic and web',
+                                         VpcId=vpcId)
+securityGroupId = response['GroupId']
+logging.warning('Security Group Created %s in vpc %s.', security_group_id, vpc_id)
 
-user_data_script2= """#!/bin/bash
+data = securityGroupClient.authorize_security_group_ingress(
+        GroupId=securityGroupId,
+        IpPermissions=[
+            {'IpProtocol': 'tcp',
+             'FromPort': 80,
+             'ToPort': 80,
+             'IpRanges': [{'CidrIp': '0.0.0.0/0'}]},
+            {'IpProtocol': 'tcp',
+             'FromPort': 22,
+             'ToPort': 22,
+             'IpRanges': [{'CidrIp': '0.0.0.0/0'}]}
+        ])
+
+
+######### Creating Intermediate Server, installing Flask Development Server, download AfterPay app from Git and run ########
+
+userDataScript= """#!/bin/bash
 mkdir myproject
 cd myproject
 python3 -m venv venv
@@ -178,63 +180,39 @@ export FLASK_APP=tiny_app.py
 sed -i "s/app.run()/app.run(host='0.0.0.0', debug=True, port=80)/g" tiny_app.py
 sudo python tiny_app.py"""
 
-
-#ec2server = ec2_resource.create_instances(ImageId='ami-009eb83aa92b90a96',
-#                                            InstanceType='t2.micro',
-#                                            KeyName='AfterPayKey',
-#                                            MinCount=1,
-#                                            MaxCount=1,
-#					    SecurityGroupIds=[
-#            					security_group_id,
-#            				    ],
-#					    UserData=user_data_script2)
-
-
-
-
-ec2server = ec2_resource.create_instances(ImageId='ami-009eb83aa92b90a96',
+ec2ServerResource = boto3.resource('ec2')
+ec2Server = ec2ServerResource.create_instances(ImageId=amiImage['ImageId'],
                                             InstanceType='t2.micro',
-                                            KeyName='AfterPayKey',
+                                            KeyName='AfterPaySSHKey',
                                             MinCount=1,
                                             MaxCount=1,
-                                            SecurityGroupIds=[
-                                                'sg-0d33a50e7c4878f36',
-                                            ],
-                                            UserData=user_data_script2)
+					     SecurityGroupIds=[
+            					securityGroupId,
+            				    ],
+					    UserData=userDataScript)
+
+
+checkStatusClient = boto3.client('ec2')
+ec2ServerStatus = checkStatusClient.describe_instance_status(InstanceIds=[
+                                   ec2Server[0].instance_id,
+                                ])
+
+while len(ec2ServerStatus['InstanceStatuses']) == 0:
+        ec2ServerStatus = checkStatusClient.describe_instance_status(InstanceIds=[
+                                   ec2Server[0].instance_id,
+                                ])
+
+
 
 time.sleep(120)
 
-client = boto3.client('autoscaling')
 
-#response = client.create_launch_configuration(
-#    ImageId='ami-009eb83aa92b90a96',
-#    LaunchConfigurationName='LaunchConfig01',
-#    InstanceId='i-0996e316ac8b41114',
-#    UserData=user_data_script2,
-#    InstanceType='t2.micro',
 
-#    SecurityGroups=[
-#        'sg-0d33a50e7c4878f36',
-#    ],
-#)
+######### Create an AutoScale Group with a Elastic Load Balancer ######
 
-#response = client.create_auto_scaling_group(
-#    AutoScalingGroupName='AutoScaleGroup01',
-#    InstanceId=ec2server[0].instance_id,
-#    DesiredCapacity=2,
-#    MaxSize=2,
-#    MinSize=2
-#)
 
-#response = client.attach_instances(
-#    InstanceIds=[
-#        ec2server[0].instance_id,
-#    ],
-#    AutoScalingGroupName='AutoScaleGroup01'
-#)
-
-client = boto3.client('elb')
-response = client.create_load_balancer(
+creatElbClient = boto3.client('elb')
+elbResponse = creatElbClient.create_load_balancer(
     Listeners=[
         {
             'InstancePort': 80,
@@ -245,19 +223,18 @@ response = client.create_load_balancer(
     ],
     LoadBalancerName='AWS-ELB-01',
     SecurityGroups=[
-        'sg-0d33a50e7c4878f36',
+        securityGroupId,
     ],
     Subnets=[
-        ec2server[0].subnet_id,
+        ec2Server[0].subnet_id,
     ],
 )
 
-print(response['DNSName'])
 
 
-client = boto3.client('autoscaling')
+autoScaleClient = boto3.client('autoscaling')
 
-response = client.create_auto_scaling_group(
+creatASResponse = autoScaleClient.create_auto_scaling_group(
     AutoScalingGroupName='AutoScaleGroup01',
     InstanceId=ec2server[0].instance_id,
     DesiredCapacity=2,
@@ -266,9 +243,11 @@ response = client.create_auto_scaling_group(
     MinSize=2
 )
 
-response = client.attach_load_balancers(
+attachElbResponse = autoScaleClient.attach_load_balancers(
     AutoScalingGroupName='AutoScaleGroup01',
     LoadBalancerNames=[
         'AWS-ELB-01',
     ]
 )
+
+logging.warning('Please use Elastic Load Balancer DNS name to access AfterPay application : %s', elbResponse['DNSName'])
