@@ -3,7 +3,9 @@ import logging
 import boto3
 from operator import itemgetter
 
-"""Exercise create_ec2_instance()"""
+
+#########  Create a filter to filter out Amazon Linux standard base image, which will be used to build customized AMI for AfterPay. #########
+
 client = boto3.client('ec2')
 
 filters = [ {
@@ -35,7 +37,7 @@ filters = [ {
     'Values': ['machine']
 } ]
 
-# Use above filters 
+######### Use above filter to search in Amazon for AMI ID ############ 
 response = client.describe_images(
   Filters=filters,
   Owners=[
@@ -43,12 +45,14 @@ response = client.describe_images(
   ]
 )
 
-# Sort on Creation date Desc
+######### Sort on above results and creation AMI images on decending order. ###########
+
 image_details = sorted(response['Images'],key=itemgetter('CreationDate'),reverse=True)
 ami_id = image_details[0]['ImageId']
 logging.basicConfig(format='%(asctime)s %(message)s')
 
-logging.warning('Script will use Amazon AMI ID :  %s for bulding base customized AMI', ami_id)
+
+logging.warning('Script will use Amazon AMI ID :  %s for building base customized AMI : ', ami_id)
 
 
 #ec2 = boto3.client('ec2')
