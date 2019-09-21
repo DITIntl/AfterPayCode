@@ -262,10 +262,12 @@ cleanUpEc2Response = cleanUpEc2client.terminate_instances(
     ]
 )
 
-time.sleep(120)
+logging.warning('Hang on tight mate, It is almost there !')
+
+time.sleep(300)
 
 cleanUpEc2Client = boto3.client('ec2')
-cleanUpEc2Response = cleanUpEc2client.terminate_instances(
+cleanUpEc2Response = cleanUpEc2Client.terminate_instances(
     InstanceIds=[
         ec2Server[0].instance_id,
     ]
@@ -274,7 +276,4 @@ cleanUpEc2Response = cleanUpEc2client.terminate_instances(
 
 
 logging.warning('Please use Elastic Load Balancer DNS name to access AfterPay application : %s', elbResponse['DNSName'])
-
-
-
 
