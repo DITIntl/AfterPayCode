@@ -62,10 +62,11 @@ sshKeyResponse = sshKeyClient.create_key_pair(KeyName='AfterPaySSHKey')
 logging.warning('Generated a SSH-key file AfterPaySSHKey.pem whcih can be used to login to server and saved it on local folder used to run this script.')
 
 f= open("AfterPaySSHKey.pem","w+")
-f.write(str(sshKeyResponse))
+f.write(str(sshKeyResponse['KeyMaterial']))
 f.close()
 
-logging.warning('Creating a customised AMI ...')
+######## Creating an customized AMI as for the requirement given by AfterPay ######## 
+
 printSpec = """Creating a customized AMI for After pay with below specifications
 
 
@@ -80,9 +81,10 @@ printSpec = """Creating a customized AMI for After pay with below specifications
 """
 
 logging.warning(printSpec)
+logging.warning('Creating a customized AMI for AfterPay...')
 
 
-user_data_script = """#!/bin/bash
+userDataScriptAmi = """#!/bin/bash
 sudo yum -y update --security
 sudo yum -y update
 sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1
@@ -96,13 +98,13 @@ sudo systemctl enable ntpd.service
 echo "*         hard    nofile      65535" | sudo tee -a /etc/security/limits.conf
 echo "*         soft    nofile      65535" | sudo tee -a /etc/security/limits.conf"""
 
-ec2_resource = boto3.resource('ec2')
-#instance = ec2_resource.create_instances(ImageId=ami_id,
-#                                            InstanceType='t2.micro',
-#                                            KeyName='AfterPayKey',
-#                                            MinCount=1,
-#                                            MaxCount=1,
-#                                            UserData=user_data_script)
+ec2AmiResource = boto3.resource('ec2')
+ec2InstanceAmi = ec2AmiResource.create_instances(ImageId=amiId,
+                                            InstanceType='t2.micro',
+                                            KeyName='AfterPaySSHKey',
+                                            MinCount=1,
+                                            MaxCount=1,
+                                            UserData=userDataScriptAmi)
 
 
 logging.warning('Update packages, install services and configure services on AWSLinuxAfterPay AMI')
