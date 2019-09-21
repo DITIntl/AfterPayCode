@@ -279,4 +279,4 @@ cleanUpEc2Response = cleanUpEc2Client.terminate_instances(
     ]
 )
 
-logging.warning('AFterPay @ AWS Ready !')
+logging.warning('AfterPay @ AWS Ready !')
