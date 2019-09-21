@@ -150,28 +150,41 @@ sudo python tiny_app.py"""
 
 
 
-#ec2server = ec2_resource.create_instances(ImageId='ami-009eb83aa92b90a96',
-#                                            InstanceType='t2.micro',
-#                                            KeyName='AfterPayKey',
-#                                            MinCount=1,
-#                                            MaxCount=1,
-#                                            SecurityGroupIds=[
-#                                                'sg-0d33a50e7c4878f36',
-#                                            ],
-#                                            UserData=user_data_script2)
+ec2server = ec2_resource.create_instances(ImageId='ami-009eb83aa92b90a96',
+                                            InstanceType='t2.micro',
+                                            KeyName='AfterPayKey',
+                                            MinCount=1,
+                                            MaxCount=1,
+                                            SecurityGroupIds=[
+                                                'sg-0d33a50e7c4878f36',
+                                            ],
+                                            UserData=user_data_script2)
 
 client = boto3.client('autoscaling')
 
+#response = client.create_launch_configuration(
+#    ImageId='ami-009eb83aa92b90a96',
+#    LaunchConfigurationName='LaunchConfig01',
+#    InstanceId='i-0996e316ac8b41114',
+#    UserData=user_data_script2,
+#    InstanceType='t2.micro',
+
+#    SecurityGroups=[
+#        'sg-0d33a50e7c4878f36',
+#    ],
+#)
 
 response = client.create_auto_scaling_group(
     AutoScalingGroupName='AutoScaleGroup01',
-    MaxSize=3,
+    InstanceId=ec2server.id,
+    DesiredCapacity=2,
+    MaxSize=2,
     MinSize=2
 )
 
 response = client.attach_instances(
     InstanceIds=[
-        'i-0996e316ac8b41114',
+        ec2server.id,
     ],
     AutoScalingGroupName='AutoScaleGroup01'
 )
