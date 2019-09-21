@@ -160,6 +160,8 @@ ec2server = ec2_resource.create_instances(ImageId='ami-009eb83aa92b90a96',
                                             ],
                                             UserData=user_data_script2)
 
+time.sleep(120)
+
 client = boto3.client('autoscaling')
 
 #response = client.create_launch_configuration(
@@ -174,19 +176,56 @@ client = boto3.client('autoscaling')
 #    ],
 #)
 
+#response = client.create_auto_scaling_group(
+#    AutoScalingGroupName='AutoScaleGroup01',
+#    InstanceId=ec2server[0].instance_id,
+#    DesiredCapacity=2,
+#    MaxSize=2,
+#    MinSize=2
+#)
+
+#response = client.attach_instances(
+#    InstanceIds=[
+#        ec2server[0].instance_id,
+#    ],
+#    AutoScalingGroupName='AutoScaleGroup01'
+#)
+
+client = boto3.client('elb')
+response = client.create_load_balancer(
+    Listeners=[
+        {
+            'InstancePort': 80,
+            'InstanceProtocol': 'HTTP',
+            'LoadBalancerPort': 80,
+            'Protocol': 'HTTP',
+        },
+    ],
+    LoadBalancerName='AWS-ELB-01',
+    SecurityGroups=[
+        'sg-0d33a50e7c4878f36',
+    ],
+    Subnets=[
+        ec2server[0].subnet_id,
+    ],
+)
+
+print(response['DNSName'])
+
+
+client = boto3.client('autoscaling')
+
 response = client.create_auto_scaling_group(
     AutoScalingGroupName='AutoScaleGroup01',
-    InstanceId=ec2server.id,
+    InstanceId=ec2server[0].instance_id,
     DesiredCapacity=2,
     MaxSize=2,
     MinSize=2
 )
 
-response = client.attach_instances(
-    InstanceIds=[
-        ec2server.id,
-    ],
-    AutoScalingGroupName='AutoScaleGroup01'
+response = client.attach_load_balancers(
+    AutoScalingGroupName='AutoScaleGroup01',
+    LoadBalancerNames=[
+        'AWS-ELB-01',
+    ]
 )
-
-
