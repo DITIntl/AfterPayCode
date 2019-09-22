@@ -124,7 +124,7 @@ while len(ec2AmiStatus['InstanceStatuses']) == 0:
                                 ]) 
 #print(ec2AmiStatus['InstanceStatuses'][0]['InstanceState']['Name'])
 
-time.sleep(120)
+time.sleep(240)
 
 amiImage = boto3.client('ec2').create_image(InstanceId=ec2InstanceAmi[0].instance_id, Name='AfterPayAMI')
 	 
@@ -132,7 +132,7 @@ amiImage = boto3.client('ec2').create_image(InstanceId=ec2InstanceAmi[0].instanc
 if len(amiImage['ImageId']) == 0:
         time.sleep(60)
 
-time.sleep(120)
+time.sleep(240)
 
 
 logging.warning('Customized AMI image build for  AfterPay completed ... AMI image name is AfterPayAMI')
@@ -204,7 +204,7 @@ while len(ec2ServerStatus['InstanceStatuses']) == 0:
 
 
 
-time.sleep(120)
+time.sleep(240)
 
 logging.warning('Installing Flask Development Server,Download AfterPay app from Git and run server on port 80')
 
@@ -263,7 +263,7 @@ logging.warning('Please use Elastic Load Balancer DNS name to access AfterPay ap
 
 logging.warning('cleaning up enviroment ....')
 
-time.sleep(10)
+time.sleep(30)
 
 cleanUpEc2Client = boto3.client('ec2')
 cleanUpEc2Response = cleanUpEc2Client.terminate_instances(
@@ -279,4 +279,4 @@ cleanUpEc2Response = cleanUpEc2Client.terminate_instances(
     ]
 )
 
-logging.warning('AfterPay @ AWS Ready !')
+logging.warning('AfterPay App @ AWS Ready !')
